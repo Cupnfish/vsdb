@@ -110,8 +110,6 @@ impl<T> Clone for Orphan<T> {
     }
 }
 
-impl<T> Copy for Orphan<T> {}
-
 impl<T: Default + ValueEnDe> Default for Orphan<T> {
     fn default() -> Self {
         let mut hdr = MapxOrdRawKey::new();
@@ -127,6 +125,13 @@ impl<T> Orphan<T>
 where
     T: ValueEnDe,
 {
+    #[inline(always)]
+    pub unsafe fn shadow(&self) -> Self {
+        Self {
+            inner: self.inner.shadow(),
+        }
+    }
+
     pub fn new(v: T) -> Self {
         let mut hdr = MapxOrdRawKey::new();
         hdr.insert_ref(&[], &v);

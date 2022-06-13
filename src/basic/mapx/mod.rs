@@ -59,8 +59,6 @@ impl<K, V> Clone for Mapx<K, V> {
     }
 }
 
-impl<K, V> Copy for Mapx<K, V> {}
-
 impl<K, V> Default for Mapx<K, V>
 where
     K: KeyEnDe,
@@ -77,10 +75,9 @@ where
     V: ValueEnDe,
 {
     #[inline(always)]
-    pub fn new() -> Self {
-        Mapx {
-            inner: MapxOrdRawKey::new(),
-            p: PhantomData,
+    pub unsafe fn shadow(&self) -> Self {
+        Self {
+            inner: self.inner.shadow(),
         }
     }
 

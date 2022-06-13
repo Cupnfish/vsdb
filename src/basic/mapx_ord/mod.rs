@@ -65,8 +65,6 @@ impl<K, V> Clone for MapxOrd<K, V> {
     }
 }
 
-impl<K, V> Copy for MapxOrd<K, V> {}
-
 impl<K, V> Default for MapxOrd<K, V>
 where
     K: KeyEnDeOrdered,
@@ -82,6 +80,13 @@ where
     K: KeyEnDeOrdered,
     V: ValueEnDe,
 {
+    #[inline(always)]
+    pub unsafe fn shadow(&self) -> Self {
+        Self {
+            inner: self.inner.shadow(),
+        }
+    }
+
     #[inline(always)]
     pub fn new() -> Self {
         MapxOrd {

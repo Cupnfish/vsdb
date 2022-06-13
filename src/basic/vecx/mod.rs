@@ -52,8 +52,6 @@ impl<T> Clone for Vecx<T> {
     }
 }
 
-impl<T> Copy for Vecx<T> {}
-
 impl<T: ValueEnDe> Default for Vecx<T> {
     fn default() -> Self {
         Self::new()
@@ -61,6 +59,13 @@ impl<T: ValueEnDe> Default for Vecx<T> {
 }
 
 impl<T: ValueEnDe> Vecx<T> {
+    #[inline(always)]
+    pub unsafe fn shadow(&self) -> Self {
+        Self {
+            inner: self.inner.shadow(),
+        }
+    }
+
     #[inline(always)]
     pub fn new() -> Self {
         Vecx {

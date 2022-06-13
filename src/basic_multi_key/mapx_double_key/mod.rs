@@ -38,14 +38,19 @@ impl<K1, K2, V> Clone for MapxDk<K1, K2, V> {
     }
 }
 
-impl<K1, K2, V> Copy for MapxDk<K1, K2, V> {}
-
 impl<K1, K2, V> MapxDk<K1, K2, V>
 where
     K1: KeyEnDe,
     K2: KeyEnDe,
     V: ValueEnDe,
 {
+    #[inline(always)]
+    pub unsafe fn shadow(&self) -> Self {
+        Self {
+            inner: self.inner.shadow(),
+        }
+    }
+
     #[inline(always)]
     pub fn new() -> Self {
         Self {

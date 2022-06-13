@@ -16,7 +16,7 @@ use ruc::*;
 use serde::{Deserialize, Serialize};
 use std::ops::{Deref, DerefMut};
 
-#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Debug)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Debug)]
 #[serde(bound = "")]
 pub struct MapxRawMk {
     // Will never be changed once created
@@ -27,6 +27,13 @@ pub struct MapxRawMk {
 }
 
 impl MapxRawMk {
+    #[inline(always)]
+    pub unsafe fn shadow(&self) -> Self {
+        Self {
+            inner: self.inner.shadow(),
+        }
+    }
+
     /// # Panic
     /// Will panic if `0 == key_size`.
     #[inline(always)]

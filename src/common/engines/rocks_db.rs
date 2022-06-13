@@ -1,6 +1,6 @@
 use crate::common::{
     vsdb_get_base_dir, vsdb_set_base_dir, BranchID, Engine, Pre, PreBytes, RawBytes,
-    RawKey, RawValue, VersionID, INITIAL_BRANCH_ID, MB, META_KEY_SIZ, RESERVED_ID_CNT,
+    RawKey, RawValue, VersionID, INITIAL_BRANCH_ID, MB, RESERVED_ID_CNT,
 };
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;

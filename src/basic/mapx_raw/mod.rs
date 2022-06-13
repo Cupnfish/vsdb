@@ -33,24 +33,26 @@
 #[cfg(test)]
 mod test;
 
-use crate::common::{engines, RawKey, RawValue};
+use crate::common::{engines, RawValue};
+use engines::{MapxIter as MapxRawIter, MapxIterMut as MapxRawIterMut, ValueMut};
 use ruc::*;
 use serde::{Deserialize, Serialize};
-use std::ops::{Deref, DerefMut, RangeBounds};
+use std::ops::RangeBounds;
 
-#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Debug)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Debug)]
 #[serde(bound = "")]
 pub struct MapxRaw {
     inner: engines::Mapx,
 }
 
-impl Default for MapxRaw {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl MapxRaw {
+    #[inline(always)]
+    pub unsafe fn shadow(&self) -> Self {
+        Self {
+            inner: self.inner.shadow(),
+        }
+    }
+
     #[inline(always)]
     pub fn new() -> Self {
         MapxRaw {
@@ -59,15 +61,13 @@ impl MapxRaw {
     }
 
     #[inline(always)]
-    pub fn get(&self, key: &[u8]) -> Option<RawValue> {
+    pub fn get(&self, key: &[u8]) -> Option<&RawValue> {
         self.inner.get(key)
     }
 
     #[inline(always)]
     pub fn get_mut<'a>(&'a mut self, key: &'a [u8]) -> Option<ValueMut<'a>> {
-        self.inner
-            .get(key)
-            .map(move |v| ValueMut::new(self, key, v))
+        self.inner.get_mut(key)
     }
 
     #[inline(always)]
@@ -76,12 +76,12 @@ impl MapxRaw {
     }
 
     #[inline(always)]
-    pub fn get_le(&self, key: &[u8]) -> Option<(RawKey, RawValue)> {
+    pub fn get_le(&self, key: &[u8]) -> Option<(&[u8], &[u8])> {
         self.range(..=key).next_back()
     }
 
     #[inline(always)]
-    pub fn get_ge(&self, key: &[u8]) -> Option<(RawKey, RawValue)> {
+    pub fn get_ge(&self, key: &[u8]) -> Option<(&[u8], &[u8])> {
         self.range(key..).next()
     }
 
@@ -102,16 +102,12 @@ impl MapxRaw {
 
     #[inline(always)]
     pub fn iter(&self) -> MapxRawIter {
-        MapxRawIter {
-            iter: self.inner.iter(),
-        }
+        self.inner.iter()
     }
 
     #[inline(always)]
     pub fn range<'a, R: RangeBounds<&'a [u8]>>(&'a self, bounds: R) -> MapxRawIter {
-        MapxRawIter {
-            iter: self.inner.range(bounds),
-        }
+        self.inner.range(bounds)
     }
 
     #[inline(always)]
@@ -130,36 +126,9 @@ impl MapxRaw {
     }
 }
 
-#[derive(PartialEq, Eq, Debug)]
-pub struct ValueMut<'a> {
-    hdr: &'a mut MapxRaw,
-    key: &'a [u8],
-    value: RawValue,
-}
-
-impl<'a> ValueMut<'a> {
-    fn new(hdr: &'a mut MapxRaw, key: &'a [u8], value: RawValue) -> Self {
-        ValueMut { hdr, key, value }
-    }
-}
-
-impl<'a> Drop for ValueMut<'a> {
-    fn drop(&mut self) {
-        self.hdr.insert(self.key, &self.value);
-    }
-}
-
-impl<'a> Deref for ValueMut<'a> {
-    type Target = RawValue;
-
-    fn deref(&self) -> &Self::Target {
-        &self.value
-    }
-}
-
-impl<'a> DerefMut for ValueMut<'a> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.value
+impl Default for MapxRaw {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -184,22 +153,5 @@ impl<'a> EntryRef<'a> {
             self.hdr.insert(self.key, &f());
         }
         pnk!(self.hdr.get_mut(self.key))
-    }
-}
-
-pub struct MapxRawIter {
-    iter: engines::MapxIter,
-}
-
-impl Iterator for MapxRawIter {
-    type Item = (RawKey, RawValue);
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
-    }
-}
-
-impl DoubleEndedIterator for MapxRawIter {
-    fn next_back(&mut self) -> Option<Self::Item> {
-        self.iter.next_back()
     }
 }

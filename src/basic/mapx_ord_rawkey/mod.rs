@@ -62,8 +62,6 @@ impl<V> Clone for MapxOrdRawKey<V> {
     }
 }
 
-impl<V> Copy for MapxOrdRawKey<V> {}
-
 impl<V> Default for MapxOrdRawKey<V>
 where
     V: ValueEnDe,
@@ -77,6 +75,13 @@ impl<V> MapxOrdRawKey<V>
 where
     V: ValueEnDe,
 {
+    #[inline(always)]
+    pub unsafe fn shadow(&self) -> Self {
+        Self {
+            inner: self.inner.shadow(),
+        }
+    }
+
     #[inline(always)]
     pub fn new() -> Self {
         MapxOrdRawKey {

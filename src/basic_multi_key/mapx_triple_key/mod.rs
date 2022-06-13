@@ -38,8 +38,6 @@ impl<K1, K2, K3, V> Clone for MapxTk<K1, K2, K3, V> {
     }
 }
 
-impl<K1, K2, K3, V> Copy for MapxTk<K1, K2, K3, V> {}
-
 impl<K1, K2, K3, V> MapxTk<K1, K2, K3, V>
 where
     K1: KeyEnDe,
@@ -47,6 +45,13 @@ where
     K3: KeyEnDe,
     V: ValueEnDe,
 {
+    #[inline(always)]
+    pub unsafe fn shadow(&self) -> Self {
+        Self {
+            inner: self.inner.shadow(),
+        }
+    }
+
     #[inline(always)]
     pub fn new() -> Self {
         Self {

@@ -40,7 +40,7 @@ use ruc::*;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 
-#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Debug)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Debug)]
 #[serde(bound = "")]
 pub struct VecxRaw {
     inner: MapxOrdRawValue<u64>,
@@ -53,6 +53,13 @@ impl Default for VecxRaw {
 }
 
 impl VecxRaw {
+    #[inline(always)]
+    pub unsafe fn shadow(&self) -> Self {
+        Self {
+            inner: self.inner.shadow(),
+        }
+    }
+
     #[inline(always)]
     pub fn new() -> Self {
         VecxRaw {

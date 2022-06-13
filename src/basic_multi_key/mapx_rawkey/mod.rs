@@ -32,9 +32,14 @@ impl<V> Clone for MapxRawKeyMk<V> {
     }
 }
 
-impl<V> Copy for MapxRawKeyMk<V> {}
-
 impl<V: ValueEnDe> MapxRawKeyMk<V> {
+    #[inline(always)]
+    pub unsafe fn shadow(&self) -> Self {
+        Self {
+            inner: self.inner.shadow(),
+        }
+    }
+
     /// # Panic
     /// Will panic if `0 == key_size`.
     #[inline(always)]
