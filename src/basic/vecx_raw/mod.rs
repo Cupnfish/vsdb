@@ -46,12 +46,6 @@ pub struct VecxRaw {
     inner: MapxOrdRawValue<u64>,
 }
 
-impl Default for VecxRaw {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl VecxRaw {
     #[inline(always)]
     pub unsafe fn shadow(&self) -> Self {
@@ -189,6 +183,12 @@ impl VecxRaw {
     #[inline(always)]
     pub fn clear(&mut self) {
         self.inner.clear();
+    }
+}
+
+impl Default for VecxRaw {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

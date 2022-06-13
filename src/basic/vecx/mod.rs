@@ -46,18 +46,6 @@ pub struct Vecx<T> {
     inner: MapxOrdRawKey<T>,
 }
 
-impl<T> Clone for Vecx<T> {
-    fn clone(&self) -> Self {
-        Self { inner: self.inner }
-    }
-}
-
-impl<T: ValueEnDe> Default for Vecx<T> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl<T: ValueEnDe> Vecx<T> {
     #[inline(always)]
     pub unsafe fn shadow(&self) -> Self {
@@ -207,6 +195,20 @@ impl<T: ValueEnDe> Vecx<T> {
     #[inline(always)]
     pub fn clear(&mut self) {
         self.inner.clear();
+    }
+}
+
+impl<T> Clone for Vecx<T> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+        }
+    }
+}
+
+impl<T: ValueEnDe> Default for Vecx<T> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

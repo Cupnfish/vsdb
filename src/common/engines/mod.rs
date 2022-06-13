@@ -81,7 +81,7 @@ pub trait Engine: Sized {
         bounds: R,
     ) -> EngineIter;
 
-    fn get(&self, meta_prefix: PreBytes, key: &[u8]) -> Option<&RawValue>;
+    fn get(&self, meta_prefix: PreBytes, key: &[u8]) -> Option<RawValue>;
 
     fn insert(
         &self,
@@ -116,7 +116,7 @@ pub trait Engine: Sized {
 
 const LRU_CAP: usize = 10_0000;
 
-#[derive(Eq, Debug)]
+#[derive(Debug)]
 pub(crate) struct Mapx {
     // the unique ID of each instance
     prefix: PreBytes,
@@ -167,32 +167,41 @@ impl Mapx {
         let k = key.to_vec().into_boxed_slice();
 
         unsafe {
-            let mut lru = self.lru as *const LruCache<RawKey, RawValue>
+            let mut lru = (&self.lru) as *const LruCache<RawKey, RawValue>
                 as *mut LruCache<RawKey, RawValue>;
-            if let Some(v) = lru.get(&k) {
+            if let Some(v) = (*lru).get(&k) {
                 return Some(v);
             }
 
             let v = VSDB.db.get(self.prefix, key)?;
-            lru.put(k, v);
-            lru.peek(&k)
+            (*lru).put(k, v);
+            (*lru).peek(&k)
         }
     }
 
     #[inline(always)]
-    pub(crate) fn get_mut(&mut self, key: &[u8]) -> Option<&mut RawValue> {
+    pub(crate) fn get_mut(&mut self, key: &[u8]) -> Option<ValueMut> {
         let k = key.to_vec().into_boxed_slice();
 
         unsafe {
-            let mut lru = self.lru as *const LruCache<RawKey, RawValue>
+            let mut lru = (&self.lru) as *const LruCache<RawKey, RawValue>
                 as *mut LruCache<RawKey, RawValue>;
-            if let Some(v) = lru.get_mut(&k) {
-                return Some(v);
+            if let Some(v) = (*lru).get_mut(&k) {
+                return Some(ValueMut {
+                    prefix: self.prefix,
+                    key: k,
+                    value: v,
+                });
             }
 
             let v = VSDB.db.get(self.prefix, key)?;
-            lru.put(k, v);
-            lru.peek_mut(&k)
+            (*lru).put(k.clone(), v);
+
+            Some(ValueMut {
+                prefix: self.prefix,
+                key: k,
+                value: (*lru).peek_mut(&k).unwrap(),
+            })
         }
     }
 
@@ -211,7 +220,7 @@ impl Mapx {
         MapxIter {
             db_iter: VSDB.db.iter(self.prefix),
             kv_cache: Default::default(),
-            hdr: self,
+            hdr: PhantomData,
         }
     }
 
@@ -240,7 +249,7 @@ impl Mapx {
         MapxIter {
             db_iter: VSDB.db.range(self.prefix, bounds),
             kv_cache: Default::default(),
-            hdr: self,
+            hdr: PhantomData,
         }
     }
 
@@ -294,6 +303,8 @@ impl PartialEq for Mapx {
     }
 }
 
+impl Eq for Mapx {}
+
 #[derive(Deserialize, Serialize, Debug)]
 struct InstanceCfg {
     prefix: PreBytes,
@@ -301,7 +312,10 @@ struct InstanceCfg {
 
 impl From<InstanceCfg> for Mapx {
     fn from(cfg: InstanceCfg) -> Self {
-        Self { prefix: cfg.prefix }
+        Self {
+            prefix: cfg.prefix,
+            lru: LruCache::new(LRU_CAP),
+        }
     }
 }
 
@@ -354,7 +368,7 @@ impl<'a> Iterator for MapxIter<'a> {
             *((&self.kv_cache) as *const (RawKey, RawValue)
                 as *mut (RawKey, RawValue)) = (k, v);
         }
-        Some((&self.kv_cache.0[..], &self.kv_cache.0[..]))
+        Some((&self.kv_cache.0[..], &self.kv_cache.1[..]))
     }
 }
 
@@ -365,7 +379,7 @@ impl<'a> DoubleEndedIterator for MapxIter<'a> {
             *((&self.kv_cache) as *const (RawKey, RawValue)
                 as *mut (RawKey, RawValue)) = (k, v);
         }
-        Some((&self.kv_cache.0[..], &self.kv_cache.0[..]))
+        Some((&self.kv_cache.0[..], &self.kv_cache.1[..]))
     }
 }
 
@@ -376,6 +390,7 @@ pub struct MapxIntoIter {
 
 impl IntoIterator for MapxIntoIter {
     type Item = (RawKey, RawValue);
+    type IntoIter = EngineIter;
 
     fn into_iter(self) -> Self::IntoIter {
         self.db_iter
@@ -404,13 +419,12 @@ impl<'a> Iterator for MapxIterMut<'a> {
         let (k, v) = self.db_iter.next()?;
 
         let v = unsafe {
-            let mut lru = self.lru as *const LruCache<RawKey, RawValue>
-                as *mut LruCache<RawKey, RawValue>;
-            if let Some(v) = lru.get_mut(&k) {
+            let mut lru = self.lru as *mut LruCache<RawKey, RawValue>;
+            if let Some(v) = (*lru).get_mut(&k) {
                 v
             } else {
-                lru.put(k.clone(), v);
-                lru.get_mut(&k).unwrap()
+                (*lru).put(k.clone(), v);
+                (*lru).get_mut(&k).unwrap()
             }
         };
 
@@ -429,13 +443,12 @@ impl<'a> DoubleEndedIterator for MapxIterMut<'a> {
         let (k, v) = self.db_iter.next_back()?;
 
         let v = unsafe {
-            let mut lru = self.lru as *const LruCache<RawKey, RawValue>
-                as *mut LruCache<RawKey, RawValue>;
-            if let Some(v) = lru.get_mut(&k) {
+            let mut lru = self.lru as *mut LruCache<RawKey, RawValue>;
+            if let Some(v) = (*lru).get_mut(&k) {
                 v
             } else {
-                lru.put(k.clone(), v);
-                lru.get_mut(&k).unwrap()
+                (*lru).put(k.clone(), v);
+                (*lru).get_mut(&k).unwrap()
             }
         };
 
@@ -456,7 +469,7 @@ pub struct ValueMut<'a> {
 }
 
 impl<'a> Drop for ValueMut<'a> {
-    fn drop(&'a mut self) {
+    fn drop(&mut self) {
         VSDB.db.insert(self.prefix, &self.key[..], &self.value[..]);
     }
 }

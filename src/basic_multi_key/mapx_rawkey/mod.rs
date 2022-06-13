@@ -23,20 +23,12 @@ pub struct MapxRawKeyMk<V> {
     p: PhantomData<V>,
 }
 
-impl<V> Clone for MapxRawKeyMk<V> {
-    fn clone(&self) -> Self {
-        Self {
-            inner: self.inner,
-            p: PhantomData,
-        }
-    }
-}
-
 impl<V: ValueEnDe> MapxRawKeyMk<V> {
     #[inline(always)]
     pub unsafe fn shadow(&self) -> Self {
         Self {
             inner: self.inner.shadow(),
+            p: PhantomData,
         }
     }
 
@@ -123,6 +115,15 @@ impl<V: ValueEnDe> MapxRawKeyMk<V> {
     #[inline(always)]
     pub fn key_size(&self) -> usize {
         self.inner.key_size()
+    }
+}
+
+impl<V> Clone for MapxRawKeyMk<V> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+            p: PhantomData,
+        }
     }
 }
 

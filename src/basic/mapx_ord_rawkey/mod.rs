@@ -53,24 +53,6 @@ pub struct MapxOrdRawKey<V> {
     p: PhantomData<V>,
 }
 
-impl<V> Clone for MapxOrdRawKey<V> {
-    fn clone(&self) -> Self {
-        Self {
-            inner: self.inner,
-            p: PhantomData,
-        }
-    }
-}
-
-impl<V> Default for MapxOrdRawKey<V>
-where
-    V: ValueEnDe,
-{
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl<V> MapxOrdRawKey<V>
 where
     V: ValueEnDe,
@@ -79,6 +61,7 @@ where
     pub unsafe fn shadow(&self) -> Self {
         Self {
             inner: self.inner.shadow(),
+            p: PhantomData,
         }
     }
 
@@ -250,6 +233,24 @@ where
     }
 }
 
+impl<V> Clone for MapxOrdRawKey<V> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+            p: PhantomData,
+        }
+    }
+}
+
+impl<V> Default for MapxOrdRawKey<V>
+where
+    V: ValueEnDe,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug)]
 pub struct ValueMut<'a, V>
 where
@@ -337,15 +338,15 @@ where
     }
 }
 
-pub struct MapxOrdRawKeyIter<V>
+pub struct MapxOrdRawKeyIter<'a, V>
 where
     V: ValueEnDe,
 {
-    iter: MapxRawIter,
+    iter: MapxRawIter<'a>,
     p: PhantomData<V>,
 }
 
-impl<V> Iterator for MapxOrdRawKeyIter<V>
+impl<'a, V> Iterator for MapxOrdRawKeyIter<'a, V>
 where
     V: ValueEnDe,
 {
@@ -357,7 +358,7 @@ where
     }
 }
 
-impl<V> DoubleEndedIterator for MapxOrdRawKeyIter<V>
+impl<'a, V> DoubleEndedIterator for MapxOrdRawKeyIter<'a, V>
 where
     V: ValueEnDe,
 {
@@ -368,16 +369,16 @@ where
     }
 }
 
-impl<V> ExactSizeIterator for MapxOrdRawKeyIter<V> where V: ValueEnDe {}
+impl<'a, V> ExactSizeIterator for MapxOrdRawKeyIter<'a, V> where V: ValueEnDe {}
 
-pub struct MapxOrdRawKeyValues<V>
+pub struct MapxOrdRawKeyValues<'a, V>
 where
     V: ValueEnDe,
 {
-    iter: MapxOrdRawKeyIter<V>,
+    iter: MapxOrdRawKeyIter<'a, V>,
 }
 
-impl<V> Iterator for MapxOrdRawKeyValues<V>
+impl<'a, V> Iterator for MapxOrdRawKeyValues<'a, V>
 where
     V: ValueEnDe,
 {
@@ -387,7 +388,7 @@ where
     }
 }
 
-impl<V> DoubleEndedIterator for MapxOrdRawKeyValues<V>
+impl<'a, V> DoubleEndedIterator for MapxOrdRawKeyValues<'a, V>
 where
     V: ValueEnDe,
 {
@@ -396,4 +397,4 @@ where
     }
 }
 
-impl<V> ExactSizeIterator for MapxOrdRawKeyValues<V> where V: ValueEnDe {}
+impl<'a, V> ExactSizeIterator for MapxOrdRawKeyValues<'a, V> where V: ValueEnDe {}

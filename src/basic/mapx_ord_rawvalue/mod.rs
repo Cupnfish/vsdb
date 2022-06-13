@@ -54,24 +54,6 @@ pub struct MapxOrdRawValue<K> {
     p: PhantomData<K>,
 }
 
-impl<K> Clone for MapxOrdRawValue<K> {
-    fn clone(&self) -> Self {
-        Self {
-            inner: self.inner,
-            p: PhantomData,
-        }
-    }
-}
-
-impl<K> Default for MapxOrdRawValue<K>
-where
-    K: KeyEnDeOrdered,
-{
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl<K> MapxOrdRawValue<K>
 where
     K: KeyEnDeOrdered,
@@ -80,6 +62,7 @@ where
     pub unsafe fn shadow(&self) -> Self {
         Self {
             inner: self.inner.shadow(),
+            p: PhantomData,
         }
     }
 
@@ -235,6 +218,24 @@ where
     #[inline(always)]
     pub fn clear(&mut self) {
         self.inner.clear();
+    }
+}
+
+impl<K> Clone for MapxOrdRawValue<K> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+            p: PhantomData,
+        }
+    }
+}
+
+impl<K> Default for MapxOrdRawValue<K>
+where
+    K: KeyEnDeOrdered,
+{
+    fn default() -> Self {
+        Self::new()
     }
 }
 

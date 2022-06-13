@@ -34,10 +34,13 @@
 mod test;
 
 use crate::common::{engines, RawValue};
-use engines::{MapxIter as MapxRawIter, MapxIterMut as MapxRawIterMut, ValueMut};
 use ruc::*;
 use serde::{Deserialize, Serialize};
 use std::ops::RangeBounds;
+
+pub type MapxRawIter<'a> = engines::MapxIter<'a>;
+pub type MapxRawIterMut<'a> = engines::MapxIterMut<'a>;
+pub type ValueMut<'a> = engines::ValueMut<'a>;
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Debug)]
 #[serde(bound = "")]
@@ -76,12 +79,12 @@ impl MapxRaw {
     }
 
     #[inline(always)]
-    pub fn get_le(&self, key: &[u8]) -> Option<(&[u8], &[u8])> {
+    pub fn get_le<'a>(&'a self, key: &'a [u8]) -> Option<(&'a [u8], &'a [u8])> {
         self.range(..=key).next_back()
     }
 
     #[inline(always)]
-    pub fn get_ge(&self, key: &[u8]) -> Option<(&[u8], &[u8])> {
+    pub fn get_ge<'a>(&'a self, key: &'a [u8]) -> Option<(&'a [u8], &'a [u8])> {
         self.range(key..).next()
     }
 

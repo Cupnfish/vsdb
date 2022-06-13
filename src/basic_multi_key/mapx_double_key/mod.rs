@@ -29,15 +29,6 @@ pub struct MapxDk<K1, K2, V> {
     p: PhantomData<(K1, K2, V)>,
 }
 
-impl<K1, K2, V> Clone for MapxDk<K1, K2, V> {
-    fn clone(&self) -> Self {
-        Self {
-            inner: self.inner,
-            p: PhantomData,
-        }
-    }
-}
-
 impl<K1, K2, V> MapxDk<K1, K2, V>
 where
     K1: KeyEnDe,
@@ -48,6 +39,7 @@ where
     pub unsafe fn shadow(&self) -> Self {
         Self {
             inner: self.inner.shadow(),
+            p: PhantomData,
         }
     }
 
@@ -125,6 +117,15 @@ where
     #[inline(always)]
     pub fn key_size(&self) -> usize {
         self.inner.key_size()
+    }
+}
+
+impl<K1, K2, V> Clone for MapxDk<K1, K2, V> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+            p: PhantomData,
+        }
     }
 }
 

@@ -30,6 +30,7 @@ impl MapxRawMk {
     #[inline(always)]
     pub unsafe fn shadow(&self) -> Self {
         Self {
+            key_size: self.key_size,
             inner: self.inner.shadow(),
         }
     }
@@ -173,7 +174,7 @@ impl MapxRawMk {
     where
         F: FnMut(&[&[u8]], &[u8]) -> Result<()>,
     {
-        let mut key_buf = vec![Default::default(); self.key_size()];
+        let mut key_buf = vec![&[][..]; self.key_size()];
         let mut hdr = self.inner;
         let mut depth = self.key_size();
 
@@ -182,7 +183,7 @@ impl MapxRawMk {
         } else {
             for (idx, k) in key_prefix.iter().enumerate() {
                 if let Some(v) = hdr.get(k) {
-                    key_buf[idx] = k.to_vec().into_boxed_slice();
+                    key_buf[idx] = &k[..];
                     if 1 + idx == self.key_size {
                         let key = key_buf
                             .iter()
@@ -200,13 +201,14 @@ impl MapxRawMk {
             }
         };
 
-        self.recursive_walk(hdr, &mut key_buf, depth, op).c(d!())
+        self.recursive_walk(hdr, key_buf.as_mut_slice(), depth, op)
+            .c(d!())
     }
 
     fn recursive_walk<F>(
         &self,
         hdr: MapxRaw,
-        key_buf: &mut [RawValue],
+        key_buf: &mut [&[u8]],
         depth: usize,
         op: &mut F,
     ) -> Result<()>
@@ -253,7 +255,7 @@ impl MapxRawMk {
         F: FnMut(&[&[u8]], &V) -> Result<()>,
         V: ValueEnDe,
     {
-        let mut key_buf = vec![Default::default(); self.key_size()];
+        let mut key_buf = vec![&[][..]; self.key_size()];
         let mut hdr = self.inner;
         let mut depth = self.key_size();
 
@@ -262,7 +264,7 @@ impl MapxRawMk {
         } else {
             for (idx, k) in key_prefix.iter().enumerate() {
                 if let Some(v) = hdr.get(k) {
-                    key_buf[idx] = k.to_vec().into_boxed_slice();
+                    key_buf[idx] = k;
                     if 1 + idx == self.key_size {
                         let key = key_buf
                             .iter()
@@ -280,14 +282,14 @@ impl MapxRawMk {
             }
         };
 
-        self.recursive_walk_typed_value(hdr, &mut key_buf, depth, op)
+        self.recursive_walk_typed_value(hdr, key_buf.as_mut_slice(), depth, op)
             .c(d!())
     }
 
     fn recursive_walk_typed_value<V, F>(
         &self,
         hdr: MapxRaw,
-        key_buf: &mut [RawValue],
+        key_buf: &mut [&[u8]],
         depth: usize,
         op: &mut F,
     ) -> Result<()>

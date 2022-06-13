@@ -104,20 +104,6 @@ pub struct Orphan<T> {
     inner: MapxOrdRawKey<T>,
 }
 
-impl<T> Clone for Orphan<T> {
-    fn clone(&self) -> Self {
-        Self { inner: self.inner }
-    }
-}
-
-impl<T: Default + ValueEnDe> Default for Orphan<T> {
-    fn default() -> Self {
-        let mut hdr = MapxOrdRawKey::new();
-        hdr.insert_ref(&[], &T::default());
-        Self { inner: hdr }
-    }
-}
-
 ////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////
 
@@ -157,6 +143,22 @@ where
     pub fn get_mut(&mut self) -> ValueMut<'_, T> {
         let value = self.get_value();
         ValueMut { hdr: self, value }
+    }
+}
+
+impl<T> Clone for Orphan<T> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+        }
+    }
+}
+
+impl<T: Default + ValueEnDe> Default for Orphan<T> {
+    fn default() -> Self {
+        let mut hdr = MapxOrdRawKey::new();
+        hdr.insert_ref(&[], &T::default());
+        Self { inner: hdr }
     }
 }
 

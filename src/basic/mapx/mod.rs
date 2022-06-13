@@ -50,25 +50,6 @@ pub struct Mapx<K, V> {
     p: PhantomData<K>,
 }
 
-impl<K, V> Clone for Mapx<K, V> {
-    fn clone(&self) -> Self {
-        Self {
-            inner: self.inner,
-            p: PhantomData,
-        }
-    }
-}
-
-impl<K, V> Default for Mapx<K, V>
-where
-    K: KeyEnDe,
-    V: ValueEnDe,
-{
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl<K, V> Mapx<K, V>
 where
     K: KeyEnDe,
@@ -78,6 +59,15 @@ where
     pub unsafe fn shadow(&self) -> Self {
         Self {
             inner: self.inner.shadow(),
+            p: PhantomData,
+        }
+    }
+
+    #[inline(always)]
+    pub fn new() -> Self {
+        Self {
+            inner: MapxOrdRawKey::new(),
+            p: PhantomData,
         }
     }
 
@@ -160,6 +150,25 @@ where
     #[inline(always)]
     pub fn clear(&mut self) {
         self.inner.clear();
+    }
+}
+
+impl<K, V> Clone for Mapx<K, V> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+            p: PhantomData,
+        }
+    }
+}
+
+impl<K, V> Default for Mapx<K, V>
+where
+    K: KeyEnDe,
+    V: ValueEnDe,
+{
+    fn default() -> Self {
+        Self::new()
     }
 }
 
