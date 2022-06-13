@@ -59,38 +59,33 @@ pub trait Engine: Sized {
     fn alloc_branch_id(&self) -> BranchID;
     fn alloc_version_id(&self) -> VersionID;
     fn area_count(&self) -> usize;
+
+    // NOTE:
+    // do NOT make the number of areas bigger than `u8::MAX`
+    fn area_idx(&self, meta_prefix: PreBytes) -> usize {
+        meta_prefix[0] as usize % self.area_count()
+    }
+
     fn flush(&self);
 
-    fn iter(&self, area_idx: usize, meta_prefix: PreBytes) -> MapxIter;
+    fn iter(&self, meta_prefix: PreBytes) -> MapxIter;
 
     fn range<'a, R: RangeBounds<&'a [u8]>>(
         &'a self,
-        area_idx: usize,
         meta_prefix: PreBytes,
         bounds: R,
     ) -> MapxIter;
 
-    fn get(
-        &self,
-        area_idx: usize,
-        meta_prefix: PreBytes,
-        key: &[u8],
-    ) -> Option<RawValue>;
+    fn get(&self, meta_prefix: PreBytes, key: &[u8]) -> Option<RawValue>;
 
     fn insert(
         &self,
-        area_idx: usize,
         meta_prefix: PreBytes,
         key: &[u8],
         value: &[u8],
     ) -> Option<RawValue>;
 
-    fn remove(
-        &self,
-        area_idx: usize,
-        meta_prefix: PreBytes,
-        key: &[u8],
-    ) -> Option<RawValue>;
+    fn remove(&self, meta_prefix: PreBytes, key: &[u8]) -> Option<RawValue>;
 
     fn get_instance_len(&self, instance_prefix: PreBytes) -> u64;
 
@@ -116,7 +111,6 @@ pub trait Engine: Sized {
 
 #[derive(Clone, Copy, Eq, Debug)]
 pub(crate) struct Mapx {
-    area_idx: usize,
     // the unique ID of each instance
     prefix: PreBytes,
 }
@@ -126,21 +120,13 @@ impl Mapx {
     pub(crate) fn new() -> Self {
         let prefix = VSDB.db.alloc_prefix();
 
-        // NOTE: this is NOT equal to
-        // `prefix as usize % VSDB.area_count()`, the MAX value of
-        // the type used by `len()` of almost all known OS-platforms
-        // can be considered to be always less than Pre::MAX(u64::MAX),
-        // but the reverse logic can NOT be guaranteed.
-        let area_idx = (prefix % VSDB.db.area_count() as Pre) as usize;
-
         let prefix_bytes = prefix.to_be_bytes();
 
-        assert!(VSDB.db.iter(area_idx, prefix_bytes).next().is_none());
+        assert!(VSDB.db.iter(prefix_bytes).next().is_none());
 
         VSDB.db.set_instance_len(prefix_bytes, 0);
 
         Mapx {
-            area_idx,
             prefix: prefix_bytes,
         }
     }
@@ -151,7 +137,7 @@ impl Mapx {
 
     #[inline(always)]
     pub(crate) fn get(&self, key: &[u8]) -> Option<RawValue> {
-        VSDB.db.get(self.area_idx, self.prefix, key)
+        VSDB.db.get(self.prefix, key)
     }
 
     #[inline(always)]
@@ -166,17 +152,17 @@ impl Mapx {
 
     #[inline(always)]
     pub(crate) fn iter(&self) -> MapxIter {
-        VSDB.db.iter(self.area_idx, self.prefix)
+        VSDB.db.iter(self.prefix)
     }
 
     #[inline(always)]
     pub(crate) fn range<'a, R: RangeBounds<&'a [u8]>>(&'a self, bounds: R) -> MapxIter {
-        VSDB.db.range(self.area_idx, self.prefix, bounds)
+        VSDB.db.range(self.prefix, bounds)
     }
 
     #[inline(always)]
     pub(crate) fn insert(&mut self, key: &[u8], value: &[u8]) -> Option<RawValue> {
-        let ret = VSDB.db.insert(self.area_idx, self.prefix, key, value);
+        let ret = VSDB.db.insert(self.prefix, key, value);
         if ret.is_none() {
             VSDB.db.increase_instance_len(self.prefix);
         }
@@ -185,7 +171,7 @@ impl Mapx {
 
     #[inline(always)]
     pub(crate) fn remove(&mut self, key: &[u8]) -> Option<RawValue> {
-        let ret = VSDB.db.remove(self.area_idx, self.prefix, key);
+        let ret = VSDB.db.remove(self.prefix, key);
         if ret.is_some() {
             VSDB.db.decrease_instance_len(self.prefix);
         }
@@ -194,8 +180,8 @@ impl Mapx {
 
     #[inline(always)]
     pub(crate) fn clear(&mut self) {
-        VSDB.db.iter(self.area_idx, self.prefix).for_each(|(k, _)| {
-            if VSDB.db.remove(self.area_idx, self.prefix, &k).is_some() {
+        VSDB.db.iter(self.prefix).for_each(|(k, _)| {
+            if VSDB.db.remove(self.prefix, &k).is_some() {
                 VSDB.db.decrease_instance_len(self.prefix);
             }
         });
@@ -215,24 +201,17 @@ impl PartialEq for Mapx {
 #[derive(Deserialize, Serialize, Debug)]
 struct InstanceCfg {
     prefix: PreBytes,
-    area_idx: usize,
 }
 
 impl From<InstanceCfg> for Mapx {
     fn from(cfg: InstanceCfg) -> Self {
-        Self {
-            prefix: cfg.prefix,
-            area_idx: cfg.area_idx,
-        }
+        Self { prefix: cfg.prefix }
     }
 }
 
 impl From<&Mapx> for InstanceCfg {
     fn from(x: &Mapx) -> Self {
-        Self {
-            prefix: x.prefix,
-            area_idx: x.area_idx,
-        }
+        Self { prefix: x.prefix }
     }
 }
 

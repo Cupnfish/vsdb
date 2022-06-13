@@ -29,6 +29,7 @@ for file in $(find .. -path "../target" -a -prune \
     | grep -v '\.git' \
     | grep -v 'target' \
     | grep -iv 'Makefile' \
+    | grep -iv 'LICENSE' \
     | grep -v 'tendermint'); do
 
     perl -pi -e 's/　/ /g' $file

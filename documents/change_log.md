@@ -1,5 +1,18 @@
 # Change log
 
+## v0.42.0
+
+#### API changes
+
+- the returning types is now 100% compatible with the standard library
+  - for example: a `get(...)` will now return `&V` but `V`
+- add `iter_mut` implementations for various `Iter`s
+
+#### Internal optimizations
+
+- move lru cache to the instance level
+- tuning `area idx` for LSM-friendly storage
+
 ## v0.41.1
 
 #### Internal optimizations

@@ -16,6 +16,8 @@ use std::{
     thread::available_parallelism,
 };
 
+// NOTE:
+// do NOT make the number of areas bigger than `u8::MAX`
 const DATA_SET_NUM: usize = 4;
 
 const META_KEY_MAX_KEYLEN: [u8; 1] = [u8::MAX];
@@ -184,7 +186,9 @@ impl Engine for RocksEngine {
         });
     }
 
-    fn iter(&self, area_idx: usize, meta_prefix: PreBytes) -> RocksIter {
+    fn iter(&self, meta_prefix: PreBytes) -> RocksIter {
+        let area_idx = self.area_idx(meta_prefix);
+
         let inner = self
             .meta
             .prefix_iterator_cf(self.cf_hdr(area_idx), meta_prefix);
@@ -206,10 +210,11 @@ impl Engine for RocksEngine {
 
     fn range<'a, R: RangeBounds<&'a [u8]>>(
         &'a self,
-        area_idx: usize,
         meta_prefix: PreBytes,
         bounds: R,
     ) -> RocksIter {
+        let area_idx = self.area_idx(meta_prefix);
+
         let mut opt = ReadOptions::default();
         let mut opt_rev = ReadOptions::default();
 
@@ -267,12 +272,9 @@ impl Engine for RocksEngine {
         RocksIter { inner, inner_rev }
     }
 
-    fn get(
-        &self,
-        area_idx: usize,
-        meta_prefix: PreBytes,
-        key: &[u8],
-    ) -> Option<RawValue> {
+    fn get(&self, meta_prefix: PreBytes, key: &[u8]) -> Option<RawValue> {
+        let area_idx = self.area_idx(meta_prefix);
+
         let mut k = meta_prefix.to_vec();
         k.extend_from_slice(key);
         self.meta
@@ -283,11 +285,12 @@ impl Engine for RocksEngine {
 
     fn insert(
         &self,
-        area_idx: usize,
         meta_prefix: PreBytes,
         key: &[u8],
         value: &[u8],
     ) -> Option<RawValue> {
+        let area_idx = self.area_idx(meta_prefix);
+
         let mut k = meta_prefix.to_vec();
         k.extend_from_slice(key);
 
@@ -300,12 +303,9 @@ impl Engine for RocksEngine {
         old_v.map(|v| v.into_boxed_slice())
     }
 
-    fn remove(
-        &self,
-        area_idx: usize,
-        meta_prefix: PreBytes,
-        key: &[u8],
-    ) -> Option<RawValue> {
+    fn remove(&self, meta_prefix: PreBytes, key: &[u8]) -> Option<RawValue> {
+        let area_idx = self.area_idx(meta_prefix);
+
         let mut k = meta_prefix.to_vec();
         k.extend_from_slice(key);
         let old_v = self.meta.get_cf(self.cf_hdr(area_idx), &k).unwrap();
