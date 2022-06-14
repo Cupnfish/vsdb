@@ -158,6 +158,11 @@ impl MapxRawMk {
     }
 
     #[inline(always)]
+    pub fn key_size(&self) -> usize {
+        self.key_size
+    }
+
+    #[inline(always)]
     pub fn iter_op<F>(&self, op: &mut F) -> Result<()>
     where
         F: FnMut(&[&[u8]], &[u8]) -> Result<()>,
@@ -319,10 +324,11 @@ impl MapxRawMk {
         Ok(())
     }
 
-    #[inline(always)]
-    pub fn key_size(&self) -> usize {
-        self.key_size
-    }
+    // TODO
+    // pub fn iter_mut_op
+    // pub fn iter_mut_op_with_key_prefix
+    // pub fn iter_mut_op_typed_value
+    // pub fn iter_mut_op_typed_value_with_key_prefix
 }
 
 #[derive(PartialEq, Eq, Debug)]

@@ -212,6 +212,12 @@ where
         }
     }
 
+    // TODO
+    // pub fn iter_mut
+    // pub fn values_mut
+    // pub fn range_mut
+    // pub fn range_ref_mut
+
     #[inline(always)]
     pub fn first(&self) -> Option<(K, V)> {
         self.iter().next()

@@ -50,6 +50,14 @@ where
     V: ValueEnDe,
 {
     #[inline(always)]
+    pub unsafe fn shadow(&self) -> Self {
+        Self {
+            inner: self.inner.shadow(),
+            p: PhantomData,
+        }
+    }
+
+    #[inline(always)]
     pub fn new() -> Self {
         MapxVs {
             inner: MapxOrdRawKeyVs::new(),
@@ -114,27 +122,8 @@ where
         }
     }
 
-    #[inline(always)]
-    pub fn range<'a, R: 'a + RangeBounds<K>>(
-        &'a self,
-        bounds: R,
-    ) -> MapxVsIter<'a, K, V> {
-        let l = match bounds.start_bound() {
-            Bound::Included(i) => Bound::Included(i.encode()),
-            Bound::Excluded(i) => Bound::Excluded(i.encode()),
-            _ => Bound::Unbounded,
-        };
-        let h = match bounds.end_bound() {
-            Bound::Included(i) => Bound::Included(i.encode()),
-            Bound::Excluded(i) => Bound::Excluded(i.encode()),
-            _ => Bound::Unbounded,
-        };
-
-        MapxVsIter {
-            iter: self.inner.range((l, h)),
-            p: PhantomData,
-        }
-    }
+    // TODO
+    // pub fn iter_mut
 
     #[inline(always)]
     pub fn first(&self) -> Option<(K, V)> {
@@ -216,29 +205,6 @@ where
     pub fn iter_by_branch(&self, branch_name: BranchName) -> MapxVsIter<K, V> {
         MapxVsIter {
             iter: self.inner.iter_by_branch(branch_name),
-            p: PhantomData,
-        }
-    }
-
-    #[inline(always)]
-    pub fn range_by_branch<'a, R: 'a + RangeBounds<K>>(
-        &'a self,
-        bounds: R,
-        branch_name: BranchName,
-    ) -> MapxVsIter<'a, K, V> {
-        let l = match bounds.start_bound() {
-            Bound::Included(i) => Bound::Included(i.encode()),
-            Bound::Excluded(i) => Bound::Excluded(i.encode()),
-            _ => Bound::Unbounded,
-        };
-        let h = match bounds.end_bound() {
-            Bound::Included(i) => Bound::Included(i.encode()),
-            Bound::Excluded(i) => Bound::Excluded(i.encode()),
-            _ => Bound::Unbounded,
-        };
-
-        MapxVsIter {
-            iter: self.inner.range_by_branch(branch_name, (l, h)),
             p: PhantomData,
         }
     }
@@ -332,32 +298,6 @@ where
     ) -> MapxVsIter<K, V> {
         MapxVsIter {
             iter: self.inner.iter_by_branch_version(branch_name, version_name),
-            p: PhantomData,
-        }
-    }
-
-    #[inline(always)]
-    pub fn range_by_branch_version<'a, R: 'a + RangeBounds<K>>(
-        &'a self,
-        bounds: R,
-        branch_name: BranchName,
-        version_name: VersionName,
-    ) -> MapxVsIter<'a, K, V> {
-        let l = match bounds.start_bound() {
-            Bound::Included(i) => Bound::Included(i.encode()),
-            Bound::Excluded(i) => Bound::Excluded(i.encode()),
-            _ => Bound::Unbounded,
-        };
-        let h = match bounds.end_bound() {
-            Bound::Included(i) => Bound::Included(i.encode()),
-            Bound::Excluded(i) => Bound::Excluded(i.encode()),
-            _ => Bound::Unbounded,
-        };
-
-        MapxVsIter {
-            iter: self
-                .inner
-                .range_by_branch_version(branch_name, version_name, (l, h)),
             p: PhantomData,
         }
     }

@@ -180,6 +180,9 @@ impl VecxRaw {
         }
     }
 
+    // TODO
+    // pub fn iter_mut
+
     #[inline(always)]
     pub fn clear(&mut self) {
         self.inner.clear();

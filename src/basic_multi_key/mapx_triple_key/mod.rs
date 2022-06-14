@@ -128,6 +128,12 @@ where
     pub fn key_size(&self) -> usize {
         self.inner.key_size()
     }
+
+    // TODO
+    // pub fn iter_op
+    // pub fn iter_op_with_key_prefix
+    // pub fn iter_mut_op
+    // pub fn iter_mut_op_with_key_prefix
 }
 
 impl<K1, K2, K3, V> Clone for MapxTk<K1, K2, K3, V> {

@@ -4,14 +4,24 @@
 
 #### API changes
 
-- the returning types is now 100% compatible with the standard library
-  - for example: a `get(...)` will now return `&V` but `V`
-- add `iter_mut` implementations for various `Iter`s
+- The semantic of `clone` has been changed to a deep copy
+  - The semantic of the previous `clone` is inherited by `shadow`
+  - NOTE: the newly added `shadow` API is marked as `unsafe`
+- Add `_mut` methods for various `Iter`s
+  - `iter_mut`
+  - `values_mut`
+  - `range_mut`
+  - `range_ref_mut`
+  - `iter_mut_op`
+  - `iter_mut_op_with_key_prefix`
+  - `iter_mut_op_typed_value`
+  - `iter_mut_op_typed_value_with_key_prefix`
 
 #### Internal optimizations
 
-- move lru cache to the instance level
-- tuning `area idx` for LSM-friendly storage
+- Remove lru cache
+- Tuning `area idx` for LSM-friendly storage
+- Optimize the implementation of inner length counter
 
 ## v0.41.1
 

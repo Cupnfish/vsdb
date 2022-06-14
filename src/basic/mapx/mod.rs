@@ -137,6 +137,10 @@ where
         MapxValues { iter: self.iter() }
     }
 
+    // TODO
+    // pub fn iter_mut
+    // pub fn values_mut
+
     #[inline(always)]
     pub fn remove(&mut self, key: &K) -> Option<V> {
         self.inner.remove(&key.encode())

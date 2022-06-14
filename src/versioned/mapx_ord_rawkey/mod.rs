@@ -48,6 +48,14 @@ where
     V: ValueEnDe,
 {
     #[inline(always)]
+    pub unsafe fn shadow(&self) -> Self {
+        Self {
+            inner: self.inner.shadow(),
+            p: PhantomData,
+        }
+    }
+
+    #[inline(always)]
     pub fn new() -> Self {
         MapxOrdRawKeyVs {
             inner: MapxRawVs::new(),
@@ -233,6 +241,10 @@ where
             p: PhantomData,
         }
     }
+
+    // TODO
+    // pub fn iter_mut
+    // pub fn range_mut
 
     #[inline(always)]
     pub fn iter_by_branch(&self, branch_name: BranchName) -> MapxOrdRawKeyVsIter<'_, V> {

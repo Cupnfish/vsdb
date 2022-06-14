@@ -36,7 +36,7 @@
 mod test;
 
 use crate::{
-    basic::mapx_raw::{MapxRaw, MapxRawIter},
+    basic::mapx_raw::{self, MapxRaw, MapxRawIter},
     common::{ende::ValueEnDe, RawKey},
 };
 use ruc::*;
@@ -82,12 +82,9 @@ where
 
     #[inline(always)]
     pub fn get_mut(&mut self, key: &[u8]) -> Option<ValueMut<'_, V>> {
-        self.inner.get(key).map(|v| {
-            ValueMut::new(
-                self,
-                key.to_vec().into_boxed_slice(),
-                <V as ValueEnDe>::decode(&v).unwrap(),
-            )
+        self.inner.get_mut(key).map(|inner| ValueMut {
+            value: <V as ValueEnDe>::decode(&*inner).unwrap(),
+            inner,
         })
     }
 
@@ -167,14 +164,9 @@ where
     #[inline(always)]
     pub fn iter(&self) -> MapxOrdRawKeyIter<V> {
         MapxOrdRawKeyIter {
-            iter: self.inner.iter(),
+            inner: self.inner.iter(),
             p: PhantomData,
         }
-    }
-
-    #[inline(always)]
-    pub fn values(&self) -> MapxOrdRawKeyValues<V> {
-        MapxOrdRawKeyValues { iter: self.iter() }
     }
 
     #[inline(always)]
@@ -200,7 +192,46 @@ where
         bounds: R,
     ) -> MapxOrdRawKeyIter<V> {
         MapxOrdRawKeyIter {
-            iter: self.inner.range(bounds),
+            inner: self.inner.range(bounds),
+            p: PhantomData,
+        }
+    }
+
+    #[inline(always)]
+    pub fn iter_mut(&self) -> MapxOrdRawKeyIterMut<V> {
+        MapxOrdRawKeyIterMut {
+            inner: self.inner.iter(),
+            p: PhantomData,
+        }
+    }
+
+    #[inline(always)]
+    pub fn range_mut<R: RangeBounds<RawKey>>(
+        &mut self,
+        bounds: R,
+    ) -> MapxOrdRawKeyIter<V> {
+        let start = match bounds.start_bound() {
+            Bound::Included(s) => Bound::Included(&s[..]),
+            Bound::Excluded(s) => Bound::Excluded(&s[..]),
+            Bound::Unbounded => Bound::Unbounded,
+        };
+
+        let end = match bounds.end_bound() {
+            Bound::Included(e) => Bound::Included(&e[..]),
+            Bound::Excluded(e) => Bound::Excluded(&e[..]),
+            Bound::Unbounded => Bound::Unbounded,
+        };
+
+        self.range_ref_mut((start, end))
+    }
+
+    #[inline(always)]
+    pub fn range_ref_mut<'a, R: RangeBounds<&'a [u8]>>(
+        &'a mut self,
+        bounds: R,
+    ) -> MapxOrdRawKeyIter<V> {
+        MapxOrdRawKeyIterMut {
+            inner: self.inner.range_mut(bounds),
             p: PhantomData,
         }
     }
@@ -256,18 +287,8 @@ pub struct ValueMut<'a, V>
 where
     V: ValueEnDe,
 {
-    hdr: &'a mut MapxOrdRawKey<V>,
-    key: RawKey,
     value: V,
-}
-
-impl<'a, V> ValueMut<'a, V>
-where
-    V: ValueEnDe,
-{
-    pub fn new(hdr: &'a mut MapxOrdRawKey<V>, key: RawKey, value: V) -> Self {
-        ValueMut { hdr, key, value }
-    }
+    inner: mapx_raw::ValueMut<'a>,
 }
 
 impl<'a, V> Drop for ValueMut<'a, V>
@@ -275,7 +296,7 @@ where
     V: ValueEnDe,
 {
     fn drop(&mut self) {
-        self.hdr.set_value_ref(&self.key, &self.value);
+        *self.inner = self.value.encode();
     }
 }
 
@@ -342,7 +363,7 @@ pub struct MapxOrdRawKeyIter<'a, V>
 where
     V: ValueEnDe,
 {
-    iter: MapxRawIter<'a>,
+    inner: MapxRawIter<'a>,
     p: PhantomData<V>,
 }
 
@@ -352,7 +373,7 @@ where
 {
     type Item = (RawKey, V);
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter
+        self.inner
             .next()
             .map(|(k, v)| (k, <V as ValueEnDe>::decode(&v).unwrap()))
     }
@@ -363,7 +384,7 @@ where
     V: ValueEnDe,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.iter
+        self.inner
             .next_back()
             .map(|(k, v)| (k, <V as ValueEnDe>::decode(&v).unwrap()))
     }
@@ -375,7 +396,7 @@ pub struct MapxOrdRawKeyValues<'a, V>
 where
     V: ValueEnDe,
 {
-    iter: MapxOrdRawKeyIter<'a, V>,
+    inner: MapxOrdRawKeyIter<'a, V>,
 }
 
 impl<'a, V> Iterator for MapxOrdRawKeyValues<'a, V>
@@ -384,7 +405,7 @@ where
 {
     type Item = V;
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(_, v)| v)
+        self.inner.next().map(|(_, v)| v)
     }
 }
 
@@ -393,8 +414,99 @@ where
     V: ValueEnDe,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.iter.next_back().map(|(_, v)| v)
+        self.inner.next_back().map(|(_, v)| v)
     }
 }
 
 impl<'a, V> ExactSizeIterator for MapxOrdRawKeyValues<'a, V> where V: ValueEnDe {}
+
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+
+pub struct MapxOrdRawKeyIterMut<'a, V>
+where
+    V: ValueEnDe,
+{
+    inner: mapx_raw::MapxRawIterMut<'a>,
+    p: PhantomData<V>,
+}
+
+impl<'a, V> Iterator for MapxOrdRawKeyIterMut<'a, V>
+where
+    V: ValueEnDe,
+{
+    type Item = (RawKey, ValueIterMut<'a, V>);
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next().map(|(k, v)| {
+            (
+                k,
+                ValueIterMut {
+                    value: <V as ValueEnDe>::decode(&*v).unwrap(),
+                    inner: v,
+                },
+            )
+        })
+    }
+}
+
+impl<'a, V> DoubleEndedIterator for MapxOrdRawKeyIterMut<'a, V>
+where
+    V: ValueEnDe,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.inner.next_back().map(|(k, v)| {
+            (
+                k,
+                ValueIterMut {
+                    value: <V as ValueEnDe>::decode(&*v).unwrap(),
+                    inner: v,
+                },
+            )
+        })
+    }
+}
+
+impl<'a, V> ExactSizeIterator for MapxOrdRawKeyIter<'a, V> where V: ValueEnDe {}
+
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+
+#[derive(Debug)]
+pub struct ValueIterMut<'a, V>
+where
+    V: ValueEnDe,
+{
+    value: V,
+    inner: mapx_raw::ValueIterMut<'a>,
+}
+
+impl<'a, V> Drop for ValueMut<'a, V>
+where
+    V: ValueEnDe,
+{
+    fn drop(&mut self) {
+        *self.inner = self.value.encode();
+    }
+}
+
+impl<'a, V> Deref for ValueIterMut<'a, V>
+where
+    V: ValueEnDe,
+{
+    type Target = V;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl<'a, V> DerefMut for ValueIterMut<'a, V>
+where
+    V: ValueEnDe,
+{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////

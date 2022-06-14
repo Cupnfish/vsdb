@@ -91,6 +91,11 @@ impl<V: ValueEnDe> MapxRawKeyMk<V> {
     }
 
     #[inline(always)]
+    pub fn key_size(&self) -> usize {
+        self.inner.key_size()
+    }
+
+    #[inline(always)]
     pub fn iter_op<F>(&self, op: &mut F) -> Result<()>
     where
         F: FnMut(&[&[u8]], &V) -> Result<()>,
@@ -112,10 +117,9 @@ impl<V: ValueEnDe> MapxRawKeyMk<V> {
             .c(d!())
     }
 
-    #[inline(always)]
-    pub fn key_size(&self) -> usize {
-        self.inner.key_size()
-    }
+    // TODO
+    // pub fn iter_mut_op
+    // pub fn iter_mut_op_with_key_prefix
 }
 
 impl<V> Clone for MapxRawKeyMk<V> {

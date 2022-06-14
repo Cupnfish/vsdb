@@ -36,6 +36,13 @@ impl<T: ValueEnDe> Default for VecxVs<T> {
 
 impl<T: ValueEnDe> VecxVs<T> {
     #[inline(always)]
+    pub unsafe fn shadow(&self) -> Self {
+        Self {
+            inner: self.inner.shadow(),
+        }
+    }
+
+    #[inline(always)]
     pub fn new() -> Self {
         VecxVs {
             inner: MapxOrdRawKeyVs::new(),
@@ -112,6 +119,9 @@ impl<T: ValueEnDe> VecxVs<T> {
             iter: self.inner.iter(),
         }
     }
+
+    // TODO
+    // pub fn iter_mut
 
     #[inline(always)]
     pub fn clear(&mut self) {

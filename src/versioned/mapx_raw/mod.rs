@@ -64,6 +64,13 @@ impl Default for MapxRawVs {
 
 impl MapxRawVs {
     #[inline(always)]
+    pub unsafe fn shadow(&self) -> Self {
+        Self {
+            inner: self.inner.shadow(),
+        }
+    }
+
+    #[inline(always)]
     #[allow(missing_docs)]
     pub fn new() -> Self {
         Self {
@@ -225,6 +232,9 @@ impl MapxRawVs {
     pub fn iter(&self) -> MapxRawVsIter {
         self.inner.iter()
     }
+
+    // TODO
+    // pub fn iter_mut
 
     /// Create an iterator over a specified branch.
     #[inline(always)]

@@ -49,6 +49,14 @@ where
     V: ValueEnDe,
 {
     #[inline(always)]
+    pub unsafe fn shadow(&self) -> Self {
+        Self {
+            inner: self.inner.shadow(),
+            p: PhantomData,
+        }
+    }
+
+    #[inline(always)]
     pub fn new() -> Self {
         MapxOrdVs {
             inner: MapxOrdRawKeyVs::new(),
@@ -112,6 +120,10 @@ where
             p: PhantomData,
         }
     }
+
+    // TODO
+    // pub fn iter_mut
+    // pub fn range_mut
 
     #[inline(always)]
     pub fn range<'a, R: 'a + RangeBounds<K>>(

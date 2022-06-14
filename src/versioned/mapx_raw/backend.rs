@@ -48,6 +48,20 @@ pub(super) struct MapxRawVs {
 
 impl MapxRawVs {
     #[inline(always)]
+    pub unsafe fn shadow(&self) -> Self {
+        Self {
+            default_branch: self.default_branch,
+            branch_name_to_branch_id: self.branch_name_to_branch_id.shadow(),
+            version_name_to_version_id: self.version_name_to_version_id.shadow(),
+            branch_id_to_branch_name: self.branch_id_to_branch_name.shadow(),
+            version_id_to_version_name: self.version_id_to_version_name.shadow(),
+            branch_to_its_versions: self.branch_to_its_versions.shadow(),
+            version_to_change_set: self.version_to_change_set.shadow(),
+            layered_kv: self.layered_kv.shadow(),
+        }
+    }
+
+    #[inline(always)]
     pub(super) fn new() -> Self {
         let mut ret = Self {
             default_branch: BranchID::default(),

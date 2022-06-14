@@ -33,6 +33,13 @@ impl<T> Clone for OrphanVs<T> {
 
 impl<T: ValueEnDe> OrphanVs<T> {
     #[inline(always)]
+    pub unsafe fn shadow(&self) -> Self {
+        Self {
+            inner: self.inner.shadow(),
+        }
+    }
+
+    #[inline(always)]
     pub fn new() -> Self {
         Self {
             inner: MapxOrdRawKeyVs::new(),

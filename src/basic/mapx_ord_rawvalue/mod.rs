@@ -195,6 +195,13 @@ where
         }
     }
 
+    // TODO
+    // pub fn values
+    // pub fn iter_mut
+    // pub fn values_mut
+    // pub fn range_mut
+    // pub fn range_ref_mut
+
     #[inline(always)]
     pub fn first(&self) -> Option<(K, RawValue)> {
         self.iter().next()
@@ -357,3 +364,37 @@ where
 }
 
 impl<K> ExactSizeIterator for MapxOrdRawValueIter<K> where K: KeyEnDeOrdered {}
+
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+
+pub struct MapxOrdRawKeyValuesMut<'a, V>
+where
+    V: ValueEnDe,
+{
+    inner: MapxOrdRawKeyIterMut<'a, V>,
+}
+
+impl<'a, V> Iterator for MapxOrdRawKeyValuesMut<'a, V>
+where
+    V: ValueEnDe,
+{
+    type Item = ValueIterMut<'a, V>;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next().map(|(_, v)| v)
+    }
+}
+
+impl<'a, V> DoubleEndedIterator for MapxOrdRawKeyValuesMut<'a, V>
+where
+    V: ValueEnDe,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.inner.next_back().map(|(_, v)| v)
+    }
+}
+
+impl<'a, V> ExactSizeIterator for MapxOrdRawKeyValues<'a, V> where V: ValueEnDe {}
+
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
